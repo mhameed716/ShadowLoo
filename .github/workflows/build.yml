@@ -3,6 +3,8 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -18,65 +20,30 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Correct Android Project Structure
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '9.8.0'
+
+    - name: Create Android project structure
       run: |
-        # التأكد من وجود ملفات الإعدادات وتصحيحها لتجنب البحث عن موديول app
-        echo "rootProject.name = 'ShadowLoo'" > settings.gradle
-        
-        # إنشاء ملف build.gradle جذري يتعامل مع الملفات الحالية كـ Android Library أو Application
-        cat << 'EOF' > build.gradle
-        plugins {
-            id 'com.android.application' version '8.1.1' apply false
-        }
-        allprojects {
-            repositories {
-                google()
-                mavenCentral()
-            }
-        }
-        EOF
-
-        # إنشاء مجلد app ونقل الملفات إليه ليتوافق تماماً مع المعيار القياسي لأندرويد
         mkdir -p app/src/main/java/com/example/stealthlocker app/src/main/res
-        
-        if [ -d "res" ]; then
-          cp -r res/* app/src/main/res/
-        fi
-        
-        if [ -d "src/main/java" ]; then
-          cp -r src/main/java/* app/src/main/java/
-        fi
-        
-        if [ -f "AndroidManifest.xml" ]; then
-          cp AndroidManifest.xml app/src/main/
-        fi
+        if [ -d "res" ]; then cp -r res/* app/src/main/res/; fi
+        if [ -d "src/main/java" ]; then cp -r src/main/java/* app/src/main/java/; fi
+        if [ -f "AndroidManifest.xml" ]; then cp AndroidManifest.xml app/src/main/; fi
 
-        # إنشاء build.gradle داخل مجلد app
-        cat << 'EOF' > app/build.gradle
-        plugins {
-            id 'com.android.application'
-        }
-        android {
-            namespace 'com.example.stealthlocker'
-            compileSdk 34
-            defaultConfig {
-                applicationId 'com.example.stealthlocker'
-                minSdk 24
-                targetSdk 34
-                versionCode 1
-                versionName "1.0"
-            }
-        }
-        dependencies {
-            implementation 'androidx.core:core-ktx:1.12.0'
-            implementation 'androidx.appcompat:appcompat:1.6.1'
-            implementation 'com.google.android.material:material:1.11.0'
-        }
-        EOF
+    - name: Write settings.gradle
+      run: "cat <<'GRADLE_SETTINGS' > settings.gradle\npluginManagement {\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\ndependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\nrootProject.name = 'ShadowLoo'\ninclude ':app'\nGRADLE_SETTINGS"
+
+    - name: Write root build.gradle
+      run: "cat <<'GRADLE_ROOT' > build.gradle\nplugins {\n    id 'com.android.application' version '8.1.1' apply false\n    id 'org.jetbrains.kotlin.android' version '1.9.10' apply false\n}\nGRADLE_ROOT"
+
+    - name: Write app build.gradle
+      run: "cat <<'GRADLE_APP' > app/build.gradle\nplugins {\n    id 'com.android.application'\n    id 'org.jetbrains.kotlin.android'\n}\nandroid {\n    namespace 'com.example.stealthlocker'\n    compileSdk 34\n    defaultConfig {\n        applicationId 'com.example.stealthlocker'\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName \"1.0\"\n    }\n}\ndependencies {\n    implementation 'androidx.core:core-ktx:1.12.0'\n    implementation 'androidx.appcompat:appcompat:1.6.1'\n    implementation 'com.google.android.material:material:1.11.0'\n}\nGRADLE_APP"
 
     - name: Build APK with Gradle
       run: |
-        gradle wrapper
+        gradle wrapper --gradle-version 9.8.0
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
@@ -85,4 +52,3 @@ jobs:
         name: app-debug-apk
         path: app/build/outputs/apk/debug/*.apk
         if-no-files-found: ignore
-
