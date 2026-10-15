@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -21,11 +20,12 @@ class PasswordLockActivity : AppCompatActivity() {
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var compName: ComponentName
+    private val enteredPassword = StringBuilder()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. إخفاء أزرار التنقل الثلاثة وشريط الإشعارات نهائياً (مضاعفة تفعيل Immersive Mode)
+        // 1. إخفاء أزرار النظام وشريط الإشعارات نهائياً
         hideSystemUI()
 
         // 2. منع لقطات الشاشة أو ظهور التطبيق في المهام المفتوحة
@@ -44,12 +44,9 @@ class PasswordLockActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_password)
 
-        // 4. حماية مضاعفة 20 مرة للخلفية (إلغاء وتجاهل أي لمسة عشوائية خارج خانة النص وزر الفتح)
+        // 4. حماية الشاشة بالكامل (ابتلاع أي لمسة في الخلفية)
         val rootLayout = findViewById<View>(android.R.id.content)
-        rootLayout.setOnTouchListener { v, event ->
-            // تمرير اللمس فقط إذا كان على العناصر المسموح بها، وإلا فسيتم ابتلاع اللمسة وإلغاؤها تماماً
-            true 
-        }
+        rootLayout.setOnTouchListener { _, _ -> true }
 
         // 5. قفل الجهاز فجأة عند التشغيل لتفعيل الحماية
         devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
@@ -61,17 +58,42 @@ class PasswordLockActivity : AppCompatActivity() {
 
         val passwordInput = findViewById<EditText>(R.id.passwordInput)
         val unlockButton = findViewById<Button>(R.id.unlockButton)
-        val secretPassword = "123" // كلمة السر السرية
+        val btnClear = findViewById<Button>(R.id.btnClear)
+        val secretPassword = "123" // الرمز السري المطلوب
 
-        // السماح باللمس خصيصاً داخل خانة كتابة الرمز وزر الفتح
-        passwordInput.setOnTouchListener { _, _ -> false }
-        unlockButton.setOnTouchListener { _, _ -> false }
+        // مصفوفة أزرار الأرقام الداخلية
+        val numberButtons = listOf(
+            R.id.btn0 to "0", R.id.btn1 to "1", R.id.btn2 to "2",
+            R.id.btn3 to "3", R.id.btn4 to "4", R.id.btn5 to "5",
+            R.id.btn6 to "6", R.id.btn7 to "7", R.id.btn8 to "8", R.id.btn9 to "9"
+        )
 
+        // تفعيل الضغط على الأرقام وتوجيهها حصرياً لخانة السر الداخلية
+        for ((id, digit) in numberButtons) {
+            findViewById<Button>(id).setOnClickListener {
+                if (enteredPassword.length < 6) { // تحديد الحد الأقصى للرقم مثلاً 6 خانات
+                    enteredPassword.append(digit)
+                    updatePasswordDisplay(passwordInput)
+                }
+            }
+        }
+
+        // زر الحذف (C)
+        btnClear.setOnClickListener {
+            if (enteredPassword.isNotEmpty()) {
+                enteredPassword.deleteCharAt(enteredPassword.length - 1)
+                updatePasswordDisplay(passwordInput)
+            }
+        }
+
+        // زر التأكيد (✓)
         unlockButton.setOnClickListener {
-            if (passwordInput.text.toString() == secretPassword) {
+            if (enteredPassword.toString() == secretPassword) {
                 finish() // فتح القفل عند صحة الرمز
             } else {
-                Toast.makeText(this, "كلمة السر خاطئة! الهاتف سيبقى مقفلاً.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "الرمز السري خاطئة! الهاتف سيبقى مقفلاً.", Toast.LENGTH_SHORT).show()
+                enteredPassword.clear()
+                updatePasswordDisplay(passwordInput)
             }
         }
 
@@ -83,7 +105,13 @@ class PasswordLockActivity : AppCompatActivity() {
         })
     }
 
-    // دالة لإخفاء أزرار النظام وشريط الإشعارات نهائياً ومنع سحبها (مع تكرار الفحص لمضاعفة الأمان)
+    // دالة لتحديث شكل النجوم أو الأرقام داخل خانة السر
+    private fun updatePasswordDisplay(editText: EditText) {
+        val masked = "*".repeat(enteredPassword.length)
+        editText.setText(masked)
+    }
+
+    // دالة لإخفاء أزرار النظام وشريط الإشعارات نهائياً
     private fun hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.let { controller ->
@@ -103,7 +131,6 @@ class PasswordLockActivity : AppCompatActivity() {
         }
     }
 
-    // ضمان بقاء أزرار النظام وشريط الإشعارات مخفية 20 مرة عند أي تفاعل أو تغيير في التركيز
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
@@ -111,7 +138,6 @@ class PasswordLockActivity : AppCompatActivity() {
         }
     }
 
-    // منع الخروج وإجبار التطبيق على البقاء دائماً في المقدمة
     override fun onPause() {
         super.onPause()
         try {
