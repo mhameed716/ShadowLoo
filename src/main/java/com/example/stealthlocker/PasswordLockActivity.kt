@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 
 class PasswordLockActivity : AppCompatActivity() {
@@ -22,10 +23,12 @@ class PasswordLockActivity : AppCompatActivity() {
                 Toast.makeText(this, "كلمة السر خاطئة", Toast.LENGTH_SHORT).show()
             }
         }
-    }
 
-    override fun onBackPressed() {
-        // منع زر الرجوع
+        // الطريقة الحديثة لمنع زر الرجوع في أندرويد
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // لا نضع شيئاً هنا، ليبقى زر الرجوع معطلاً
+            }
+        })
     }
 }
-
