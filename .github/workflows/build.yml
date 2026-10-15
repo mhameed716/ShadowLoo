@@ -3,6 +3,8 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -20,13 +22,26 @@ jobs:
 
     - name: Setup Correct Android Project Structure
       run: |
-        # التأكد من وجود ملفات الإعدادات وتصحيحها لتجنب البحث عن موديول app
-        echo "rootProject.name = 'ShadowLoo'" > settings.gradle
+        # إعدادات المشروع مع مستودعات البلاجن (google/mavenCentral) حتى يُوجد بلاجِن الأندرويد، وتضمين موديول app
+        cat << 'EOF' > settings.gradle
+        pluginManagement {
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        rootProject.name = 'ShadowLoo'
+        include ':app'
+        EOF
+
+        # خصائص Gradle المطلوبة لاستخدام AndroidX
+        printf 'android.useAndroidX=true\nandroid.nonTransitiveRClass=true\n' > gradle.properties
         
         # إنشاء ملف build.gradle جذري يتعامل مع الملفات الحالية كـ Android Library أو Application
         cat << 'EOF' > build.gradle
         plugins {
-            id 'com.android.application' version '8.1.1' apply false
+            id 'com.android.application' version '9.4.0' apply false
         }
         allprojects {
             repositories {
@@ -76,7 +91,7 @@ jobs:
 
     - name: Build APK with Gradle
       run: |
-        gradle wrapper
+        gradle wrapper --gradle-version 9.8.0
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
