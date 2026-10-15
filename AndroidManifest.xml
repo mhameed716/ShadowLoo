@@ -48,6 +48,8 @@
             </intent-filter>
         </receiver>
 
+        <service android:name=".OverlayLockService" android:exported="false" />
+
     </application>
 </manifest>
 

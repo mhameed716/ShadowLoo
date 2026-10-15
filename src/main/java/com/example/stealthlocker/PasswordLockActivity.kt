@@ -1,5 +1,6 @@
 package com.example.stealthlocker
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Button
@@ -26,6 +27,9 @@ class PasswordLockActivity : AppCompatActivity() {
             WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         )
 
+        // تشغيل خدمة التراكب لحجب شريط الإشعارات
+        startService(Intent(this, OverlayLockService::class.java))
+
         setContentView(R.layout.activity_password)
 
         val passwordInput = findViewById<EditText>(R.id.passwordInput)
@@ -46,6 +50,11 @@ class PasswordLockActivity : AppCompatActivity() {
                 // لا يوجد كود هنا ليبقى معطلاً
             }
         })
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopService(Intent(this, OverlayLockService::class.java))
     }
 
     // 4. منع الخروج عبر زر الرئيسية (Home) أو التطبيقات الحديثة عبر مراقبة مغادرة الواجهة
