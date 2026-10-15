@@ -1,9 +1,10 @@
 plugins {
-    id 'com.android.application' version '8.1.1'
-    id 'org.jetbrains.kotlin.android' version '1.9.10'
+    id 'com.android.application' version '9.4.0'
+    id 'org.jetbrains.kotlin.android' version '2.4.10'
 }
 
 android {
+    namespace 'com.example.stealthlocker'
     compileSdk 34
     defaultConfig {
         applicationId "com.example.stealthlocker"
