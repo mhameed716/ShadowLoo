@@ -43,7 +43,16 @@ jobs:
 
     - name: Build APK with Gradle
       run: |
-        gradle assembleDebug
+        gradle assembleDebug > build.log 2>&1 || (cat build.log; exit 1)
+        cat build.log
+
+    - name: Upload build log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: build.log
+        if-no-files-found: ignore
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
