@@ -45,7 +45,7 @@ jobs:
 
     - name: Build APK with Gradle
       run: |
-        gradle assembleDebug > build.log 2>&1 || (cat build.log; exit 1)
+        gradle assembleDebug > build.log 2>&1 || { MSG=$(tail -n 40 build.log | tr '\n' ' '); echo "::error::$MSG"; cat build.log; exit 1; }
         cat build.log
 
     - name: Upload build log
