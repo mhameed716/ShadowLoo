@@ -18,23 +18,71 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Fix Gradle Project Structure
+    - name: Setup Correct Android Project Structure
       run: |
-        if ! grep -q "include" settings.gradle; then
-          echo "rootProject.name = 'ShadowLoo'" > settings.gradle
+        # التأكد من وجود ملفات الإعدادات وتصحيحها لتجنب البحث عن موديول app
+        echo "rootProject.name = 'ShadowLoo'" > settings.gradle
+        
+        # إنشاء ملف build.gradle جذري يتعامل مع الملفات الحالية كـ Android Library أو Application
+        cat << 'EOF' > build.gradle
+        plugins {
+            id 'com.android.application' version '8.1.1' apply false
+        }
+        allprojects {
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        EOF
+
+        # إنشاء مجلد app ونقل الملفات إليه ليتوافق تماماً مع المعيار القياسي لأندرويد
+        mkdir -p app/src/main/java/com/example/stealthlocker app/src/main/res
+        
+        if [ -d "res" ]; then
+          cp -r res/* app/src/main/res/
+        fi
+        
+        if [ -d "src/main/java" ]; then
+          cp -r src/main/java/* app/src/main/java/
+        fi
+        
+        if [ -f "AndroidManifest.xml" ]; then
+          cp AndroidManifest.xml app/src/main/
         fi
 
-    - name: Build with Gradle
+        # إنشاء build.gradle داخل مجلد app
+        cat << 'EOF' > app/build.gradle
+        plugins {
+            id 'com.android.application'
+        }
+        android {
+            namespace 'com.example.stealthlocker'
+            compileSdk 34
+            defaultConfig {
+                applicationId 'com.example.stealthlocker'
+                minSdk 24
+                targetSdk 34
+                versionCode 1
+                versionName "1.0"
+            }
+        }
+        dependencies {
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'com.google.android.material:material:1.11.0'
+        }
+        EOF
+
+    - name: Build APK with Gradle
       run: |
-        chmod +x ./gradlew || true
-        gradle assembleDebug || ./gradlew assembleDebug
+        gradle wrapper
+        ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
-        path: |
-          build/outputs/apk/debug/*.apk
-          app/build/outputs/apk/debug/*.apk
+        path: app/build/outputs/apk/debug/*.apk
         if-no-files-found: ignore
 
