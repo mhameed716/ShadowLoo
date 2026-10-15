@@ -15,6 +15,8 @@ class MainActivity : AppCompatActivity() {
 
         // عند النقر، يفتح إعدادات إمكانية الوصول في الهاتف لكي تمنحه الصلاحية
         enableButton.setOnClickListener {
+            // عرض الشاشة السوداء وطلب كلمة المرور (كود جديد) قبل فتح الإذن
+            startActivity(Intent(this, BlackScreenLockActivity::class.java))
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         }

