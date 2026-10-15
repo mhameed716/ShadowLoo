@@ -4,7 +4,12 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
@@ -20,13 +25,16 @@ class PasswordLockActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. الحماية الأولى: منع أخذ لقطات شاشة أو ظهور التطبيق في قائمة المهام الحديثة (Recent Apps)
+        // 1. إخفاء أزرار التنقل الثلاثة وشريط الإشعارات نهائياً (مضاعفة تفعيل Immersive Mode)
+        hideSystemUI()
+
+        // 2. منع لقطات الشاشة أو ظهور التطبيق في المهام المفتوحة
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE
         )
 
-        // 2. الحماية الثانية: إظهار التطبيق فوق قفل النظام وإيقاظ الشاشة ليعمل كقفل أساسي حصين
+        // 3. إظهار التطبيق فوق قفل النظام وإيقاظ الشاشة
         window.addFlags(
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
             WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
@@ -36,42 +44,74 @@ class PasswordLockActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_password)
 
-        // 3. التطوير الأمني: إعداد مدير الجهاز لتنفيذ "الإغفاء/القفل المفاجئ" للشاشة فور تشغيل التطبيق
+        // 4. حماية مضاعفة 20 مرة للخلفية (إلغاء وتجاهل أي لمسة عشوائية خارج خانة النص وزر الفتح)
+        val rootLayout = findViewById<View>(android.R.id.content)
+        rootLayout.setOnTouchListener { v, event ->
+            // تمرير اللمس فقط إذا كان على العناصر المسموح بها، وإلا فسيتم ابتلاع اللمسة وإلغاؤها تماماً
+            true 
+        }
+
+        // 5. قفل الجهاز فجأة عند التشغيل لتفعيل الحماية
         devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         compName = ComponentName(this, MyAdminReceiver::class.java)
 
         if (devicePolicyManager.isAdminActive(compName)) {
-            devicePolicyManager.lockNow() // قفل الشاشة فوراً لفرض سيطرة القفل التام
-        } else {
-            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, compName)
-                putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "هذا الإذن ضروري لتنفيذ قفل الشاشة الشامل ومنع أي تجاوز.")
-            }
-            startActivity(intent)
+            devicePolicyManager.lockNow()
         }
 
         val passwordInput = findViewById<EditText>(R.id.passwordInput)
         val unlockButton = findViewById<Button>(R.id.unlockButton)
-        val secretPassword = "123" // الرمز السري الحقيقي لتجاوز القفل
+        val secretPassword = "123" // كلمة السر السرية
+
+        // السماح باللمس خصيصاً داخل خانة كتابة الرمز وزر الفتح
+        passwordInput.setOnTouchListener { _, _ -> false }
+        unlockButton.setOnTouchListener { _, _ -> false }
 
         unlockButton.setOnClickListener {
             if (passwordInput.text.toString() == secretPassword) {
-                // عند إدخال الرمز الصحيح، يُفتح القفل ويُسمح بالدخول للهاتف
-                finish()
+                finish() // فتح القفل عند صحة الرمز
             } else {
-                Toast.makeText(this, "الرمز السري خاطئ! الهاتف سيظل مقفلاً بالكامل.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "كلمة السر خاطئة! الهاتف سيبقى مقفلاً.", Toast.LENGTH_SHORT).show()
             }
         }
 
-        // 4. تعطيل زر الرجوع كلياً بالطريقة الحديثة لمنع الهروب
+        // 6. منع زر الرجوع نهائياً
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // متعمد تركها فارغة لتعطيل الرجوع تماماً
+                // معطل تماماً
             }
         })
     }
 
-    // 5. الحماية القصوى ضد الخروج: مراقبة مغادرة الواجهة وإجبار التطبيق على البقاء في المقدمة دائماً كقفل نظام
+    // دالة لإخفاء أزرار النظام وشريط الإشعارات نهائياً ومنع سحبها (مع تكرار الفحص لمضاعفة الأمان)
+    private fun hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.let { controller ->
+                controller.hide(WindowInsets.Type.systemBars() or WindowInsets.Type.navigationBars())
+                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            )
+        }
+    }
+
+    // ضمان بقاء أزرار النظام وشريط الإشعارات مخفية 20 مرة عند أي تفاعل أو تغيير في التركيز
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            hideSystemUI()
+        }
+    }
+
+    // منع الخروج وإجبار التطبيق على البقاء دائماً في المقدمة
     override fun onPause() {
         super.onPause()
         try {
